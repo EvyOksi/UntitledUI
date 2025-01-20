@@ -1,0 +1,449 @@
+-- FancyField UI Library
+-- Optimized for mobile devices
+local FancyField = {}
+local TweenService = game:GetService("TweenService")
+
+-- Helper Function: Apply Rounded Corners
+local function applyUICorner(instance, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 8)
+    corner.Parent = instance
+end
+
+-- Helper Function: Tween Visibility (Fade In/Out)
+local function tweenVisibility(instance, visible)
+    local goal = { BackgroundTransparency = visible and 1 or 0 }
+    local tween = TweenService:Create(instance, TweenInfo.new(0.3), goal)
+    tween:Play()
+end
+
+-- Function to Add Glow Effect
+local function addGlow(instance, color)
+    local glow = Instance.new("ImageLabel")
+    glow.Image = "rbxassetid://GlowEffectID"
+    glow.ImageColor3 = color or Color3.fromRGB(255, 255, 255)
+    glow.Size = UDim2.new(1.2, 0, 1.2, 0)
+    glow.BackgroundTransparency = 1
+    glow.Parent = instance
+end
+
+-- Function to Animate Button Clicks
+local function animateButton(button)
+    local originalColor = button.BackgroundColor3
+    button.MouseButton1Down:Connect(function()
+        button.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        wait(0.2)
+        button.BackgroundColor3 = originalColor
+    end)
+end
+
+-- Create a Window (Main UI Container)
+function FancyField:CreateWindow(config)
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = config.Name or "FancyFieldWindow"
+    ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0.9, 0, 0.8, 0) -- Scales well on mobile
+    MainFrame.Position = UDim2.new(0.05, 0, 0.1, 0)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(34, 34, 34)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.ClipsDescendants = true
+    MainFrame.Visible = true -- Togglable visibility
+    MainFrame.Parent = ScreenGui
+
+    applyUICorner(MainFrame) -- Rounded corners for the main frame
+
+    local TitleBar = Instance.new("TextLabel")
+    TitleBar.Size = UDim2.new(1, 0, 0.1, 0)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleBar.Font = Enum.Font.GothamBold
+    TitleBar.TextSize = 18
+    TitleBar.TextXAlignment = Enum.TextXAlignment.Left
+    TitleBar.Text = "   " .. (config.Title or "FancyField")
+    TitleBar.Parent = MainFrame
+
+    applyUICorner(TitleBar)
+
+    -- Toggle Button to Show/Hide Window
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Size = UDim2.new(0.15, 0, 0.05, 0)
+    ToggleButton.Position = UDim2.new(0.85, -10, -0.05, -10)
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80) -- Green color
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.Font = Enum.Font.GothamBold
+    ToggleButton.TextSize = 14
+    ToggleButton.Text = "Toggle"
+    ToggleButton.Parent = ScreenGui
+
+    applyUICorner(ToggleButton)
+
+    -- Functionality to toggle visibility of the main frame
+    ToggleButton.MouseButton1Click:Connect(function()
+        MainFrame.Visible = not MainFrame.Visible
+        tweenVisibility(MainFrame, not MainFrame.Visible)
+    end)
+
+    return {
+        Gui = ScreenGui,
+        Frame = MainFrame,
+        AddTab = function(self, tabName)
+            return FancyField:CreateTab(self.Frame, tabName)
+        end,
+        AddNotification = function(self, message)
+            return FancyField:CreateNotification(self.Gui, message)
+        end,
+        AddSearchBar = function(self, placeholderText)
+            return FancyField:CreateSearchBar(self.Frame, placeholderText or "Search...")
+        end,
+        AddTextbox = function(self, placeholderText)
+            return FancyField:CreateTextbox(self.Frame, placeholderText or "Enter Text...")
+        end,
+        AddDropdownMenu = function(self, optionsTable)
+            return FancyField:CreateDropdownMenu(self.Frame, optionsTable or {})
+        end,
+        AddSlider = function(self, minValue, maxValue)
+            return FancyField:CreateSlider(self.Frame, minValue or 0, maxValue or 100)
+        end,
+    }
+end
+
+-- Create a Tab (Switchable Sections of the Window)
+function FancyField:CreateTab(parentFrame, tabName)
+    local TabContainer = parentFrame:FindFirstChild("TabContainer") or Instance.new("Folder")
+    if not TabContainer.Parent then
+        TabContainer.Name = "TabContainer"
+        TabContainer.Parent = parentFrame
+    end
+
+    -- Create a button for the tab
+    local TabButton = Instance.new("TextButton")
+    TabButton.Size = UDim2.new(0.2, -10, 0.05, -5)
+    TabButton.Position = UDim2.new(0.05 + (#TabContainer:GetChildren() * 0.22), 0, 0.12, 0)
+    TabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabButton.Font = Enum.Font.Gotham
+    TabButton.TextSize = 14
+    TabButton.Text = tabName or "Tab"
+    TabButton.Parent = parentFrame
+
+    applyUICorner(TabButton)
+
+    -- Create a frame for the tab content
+    local TabFrame = Instance.new("ScrollingFrame")
+    TabFrame.Size = UDim2.new(1, -20, 0.8, -50)
+    TabFrame.Position = UDim2.new(0.05, 10, 0.2, 10)
+    TabFrame.BackgroundTransparency = 1
+    TabFrame.Visible = false
+    TabFrame.ScrollBarThickness = 5
+    TabFrame.Parent = parentFrame
+
+    -- Toggle visibility of the tab content when the button is clicked
+    TabButton.MouseButton1Click:Connect(function()
+        for _, child in ipairs(parentFrame:GetChildren()) do
+            if child:IsA("ScrollingFrame") then
+                child.Visible = false
+            end
+        end
+        TabFrame.Visible = true
+    end)
+
+    return {
+        Frame = TabFrame,
+        AddSection = function(self, sectionName)
+            return FancyField:CreateSection(self.Frame, sectionName)
+        end,
+    }
+end
+
+-- Create a Section (Organized Areas within Tabs)
+function FancyField:CreateSection(parentTabFrame, sectionName)
+    local SectionLabel = Instance.new("TextLabel")
+    SectionLabel.Size = UDim2.new(1, -20, 0.05, -5)
+    SectionLabel.Position = UDim2.new(0.05 + (#parentTabFrame:GetChildren() * 0.06), -10)
+    SectionLabel.BackgroundTransparency = 1
+    SectionLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    SectionLabel.Font = Enum.Font.GothamBold
+    SectionLabel.TextSize = 16
+    SectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SectionLabel.TextYAlignment = Enum.TextYAlignment.Top
+    SectionLabel.Text = sectionName or "Section"
+    SectionLabel.Parent = parentTabFrame
+
+    return {
+        AddButton = function(self, buttonText, callback)
+            return FancyField:CreateButton(parentTabFrame, buttonText or "Button", callback)
+        end,
+        AddSlider = function(self, sliderText, minValue, maxValue, callback)
+            return FancyField:CreateSlider(parentTabFrame, sliderText or "Slider", minValue or 0, maxValue or 100, callback)
+        end,
+        AddTextbox = function(self, placeholderText, callback)
+            return FancyField:CreateTextbox(parentTabFrame, placeholderText or "Enter Text...", callback)
+        end,
+        AddDropdownMenu = function(self, optionsTable, callback)
+            return FancyField:CreateDropdownMenu(parentTabFrame, optionsTable or {}, callback)
+        end,
+        AddToggle = function(self, toggleText, callback)
+            return FancyField:CreateToggle(parentTabFrame, toggleText or "Toggle", callback)
+        end,
+    }
+end
+
+-- Create a Button (Clickable Action Component)
+function FancyField:CreateButton(parentSectionFrame, buttonText, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, -20, 0.05, -5)
+    Button.Position = UDim2.new(0.05 + (#parentSectionFrame:GetChildren() * 0.06), -10)
+    Button.BackgroundColor3 = Color3.fromRGB(76, 175, 80) -- Green color
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
+    Button.Font = Enum.Font.GothamBold
+    Button.TextSize = 14
+    Button.TextXAlignment = Enum.TextXAlignment.Center
+    Button.TextYAlignment = Enum.TextYAlignment.Center
+    Button.Text = buttonText or "Click Me"
+    Button.Parent = parentSectionFrame
+
+    applyUICorner(Button)
+    animateButton(Button)  -- Button animation on click
+
+    -- Connect the button click to the provided callback function
+    Button.MouseButton1Click:Connect(function()
+        if callback then
+            callback()
+        end
+    end)
+
+    return Button
+end
+
+-- Create a Slider (Adjustable Value Selector)
+function FancyField:CreateSlider(parentSectionFrame, sliderText, minValue, maxValue, callback)
+    local SliderContainer = Instance.new("Frame")
+    SliderContainer.Size = UDim2.new(1, -20, 0.1, 0)
+    SliderContainer.Position = UDim2.new(0.05, 0, (#parentSectionFrame:GetChildren() * 0.12), 0)
+    SliderContainer.BackgroundTransparency = 1
+    SliderContainer.Parent = parentSectionFrame
+
+    local SliderLabel = Instance.new("TextLabel")
+    SliderLabel.Size = UDim2.new(1, -60, 0.4, 0)
+    SliderLabel.Position = UDim2.new(0, 10, 0, 0)
+    SliderLabel.BackgroundTransparency = 1
+    SliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SliderLabel.TextSize = 14
+    SliderLabel.Text = sliderText or "Slider"
+    SliderLabel.Parent = SliderContainer
+
+    local SliderBar = Instance.new("Frame")
+    SliderBar.Size = UDim2.new(1, -10, 0.1, 0)
+    SliderBar.Position = UDim2.new(0, 10, 0.5, 0)
+    SliderBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    SliderBar.Parent = SliderContainer
+
+    local SliderButton = Instance.new("Frame")
+    SliderButton.Size = UDim2.new(0.05, 0, 1, 0)
+    SliderButton.Position = UDim2.new(0, 0, 0, 0)
+    SliderButton.BackgroundColor3 = Color3.fromRGB(0, 150, 136)
+    SliderButton.Parent = SliderBar
+
+    -- Dragging logic
+    SliderButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local startX = input.Position.X
+            local startPos = SliderButton.Position.X.Scale
+            local dragging = true
+
+            local function updateSlider()
+                if dragging then
+                    local delta = (input.Position.X - startX) / SliderBar.AbsoluteSize.X
+                    local newPos = math.clamp(startPos + delta, 0, 1)
+                    SliderButton.Position = UDim2.new(newPos, 0, 0, 0)
+                    local value = math.floor(newPos * (maxValue - minValue)) + minValue
+                    if callback then callback(value) end
+                end
+            end
+
+            local function endDrag()
+                dragging = false
+            end
+
+            input.Changed:Connect(function()
+                updateSlider()
+            end)
+            input.Ended:Connect(endDrag)
+        end
+    end)
+
+    return SliderContainer
+end
+-- Create a Textbox (User Input Field)
+function FancyField:CreateTextbox(parentSectionFrame, placeholderText, callback)
+    local TextboxContainer = Instance.new("Frame")
+    TextboxContainer.Size = UDim2.new(1, -20, 0.1, 0)
+    TextboxContainer.Position = UDim2.new(0.05, 0, (#parentSectionFrame:GetChildren() * 0.12), 0)
+    TextboxContainer.BackgroundTransparency = 1
+    TextboxContainer.Parent = parentSectionFrame
+
+    local TextboxLabel = Instance.new("TextLabel")
+    TextboxLabel.Size = UDim2.new(1, -60, 0.4, 0)
+    TextboxLabel.Position = UDim2.new(0, 10, 0, 0)
+    TextboxLabel.BackgroundTransparency = 1
+    TextboxLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextboxLabel.TextSize = 14
+    TextboxLabel.Text = placeholderText or "Enter Text"
+    TextboxLabel.Parent = TextboxContainer
+
+    local Textbox = Instance.new("TextBox")
+    Textbox.Size = UDim2.new(1, -10, 0.6, 0)
+    Textbox.Position = UDim2.new(0, 10, 0.4, 0)
+    Textbox.ClearTextOnFocus = false
+    Textbox.BackgroundTransparency = 1
+    Textbox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Textbox.Font = Enum.Font.Gotham
+    Textbox.TextSize = 14
+    Textbox.PlaceholderText = placeholderText or "Enter Text"
+    Textbox.Parent = TextboxContainer
+
+    applyUICorner(Textbox)
+
+    -- Trigger callback when user submits text
+    Textbox.FocusLost:Connect(function(enterPressed)
+        if enterPressed and callback then
+            callback(Textbox.Text)
+        end
+    end)
+
+    return Textbox
+end
+
+-- Create a Dropdown Menu (Selectable Options)
+function FancyField:CreateDropdownMenu(parentSectionFrame, optionsTable, callback)
+    local DropdownContainer = Instance.new("Frame")
+    DropdownContainer.Size = UDim2.new(1, -20, 0.1, 0)
+    DropdownContainer.Position = UDim2.new(0.05, 0, (#parentSectionFrame:GetChildren() * 0.12), 0)
+    DropdownContainer.BackgroundTransparency = 1
+    DropdownContainer.Parent = parentSectionFrame
+
+    local DropdownLabel = Instance.new("TextLabel")
+    DropdownLabel.Size = UDim2.new(1, -60, 0.4, 0)
+    DropdownLabel.Position = UDim2.new(0, 10, 0, 0)
+    DropdownLabel.BackgroundTransparency = 1
+    DropdownLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    DropdownLabel.TextSize = 14
+    DropdownLabel.Text = "Select Option"
+    DropdownLabel.Parent = DropdownContainer
+
+    local DropdownButton = Instance.new("TextButton")
+    DropdownButton.Size = UDim2.new(1, -10, 0.6, 0)
+    DropdownButton.Position = UDim2.new(0, 10, 0.4, 0)
+    DropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    DropdownButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    DropdownButton.Text = "Select..."
+    DropdownButton.Font = Enum.Font.Gotham
+    DropdownButton.TextSize = 14
+    DropdownButton.Parent = DropdownContainer
+
+    applyUICorner(DropdownButton)
+    animateButton(DropdownButton)
+
+    local DropdownMenu = Instance.new("Frame")
+    DropdownMenu.Size = UDim2.new(1, -20, 0, 0)
+    DropdownMenu.Position = UDim2.new(0.05, 0, 1, 0)
+    DropdownMenu.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    DropdownMenu.Visible = false
+    DropdownMenu.Parent = DropdownButton
+
+    for i, option in ipairs(optionsTable) do
+        local OptionButton = Instance.new("TextButton")
+        OptionButton.Size = UDim2.new(1, 0, 0, 30)
+        OptionButton.Position = UDim2.new(0, 0, (i - 1) * 0.1, 0)
+        OptionButton.Text = option
+        OptionButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        OptionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        OptionButton.Font = Enum.Font.Gotham
+        OptionButton.TextSize = 14
+        OptionButton.Parent = DropdownMenu
+
+        applyUICorner(OptionButton)
+
+        OptionButton.MouseButton1Click:Connect(function()
+            DropdownButton.Text = option
+            DropdownMenu.Visible = false
+            if callback then callback(option) end
+        end)
+    end
+
+    -- Toggle dropdown visibility on button click
+    DropdownButton.MouseButton1Click:Connect(function()
+        DropdownMenu.Visible = not DropdownMenu.Visible
+    end)
+
+    return DropdownContainer
+end
+
+-- Create a Toggle (On/Off Switch)
+function FancyField:CreateToggle(parentSectionFrame, toggleText, callback)
+    local ToggleContainer = Instance.new("Frame")
+    ToggleContainer.Size = UDim2.new(1, -20, 0.1, 0)
+    ToggleContainer.Position = UDim2.new(0.05, 0, (#parentSectionFrame:GetChildren() * 0.12), 0)
+    ToggleContainer.BackgroundTransparency = 1
+    ToggleContainer.Parent = parentSectionFrame
+
+    local ToggleLabel = Instance.new("TextLabel")
+    ToggleLabel.Size = UDim2.new(1, -60, 0.4, 0)
+    ToggleLabel.Position = UDim2.new(0, 10, 0, 0)
+    ToggleLabel.BackgroundTransparency = 1
+    ToggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleLabel.TextSize = 14
+    ToggleLabel.Text = toggleText or "Toggle"
+    ToggleLabel.Parent = ToggleContainer
+
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Size = UDim2.new(0.2, 0, 0.6, 0)
+    ToggleButton.Position = UDim2.new(0.8, 0, 0.4, 0)
+    ToggleButton.Text = "OFF"
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.Font = Enum.Font.Gotham
+    ToggleButton.TextSize = 14
+    ToggleButton.Parent = ToggleContainer
+
+    applyUICorner(ToggleButton)
+
+    ToggleButton.MouseButton1Click:Connect(function()
+        if ToggleButton.Text == "OFF" then
+            ToggleButton.Text = "ON"
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 136)
+            if callback then callback(true) end
+        else
+            ToggleButton.Text = "OFF"
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            if callback then callback(false) end
+        end
+    end)
+
+    return ToggleContainer
+end
+
+-- Create a Notification (Temporary Message Popup)
+function FancyField:CreateNotification(parentScreenGui, message)
+    local Notification = Instance.new("TextLabel")
+    Notification.Size = UDim2.new(0.5, 0, 0.1, 0)
+    Notification.Position = UDim2.new(0.25, 0, 0.1, 0)
+    Notification.BackgroundColor3 = Color3.fromRGB(255, 165, 0) -- Orange color
+    Notification.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Notification.Font = Enum.Font.Gotham
+    Notification.TextSize = 16
+    Notification.Text = message
+    Notification.TextWrapped = true
+    Notification.Parent = parentScreenGui
+
+    applyUICorner(Notification)
+
+    -- Automatically disappear after 3 seconds
+    tweenVisibility(Notification, true)
+    wait(3)
+    tweenVisibility(Notification, false)
+end
+
+return FancyField
