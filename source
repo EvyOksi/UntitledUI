@@ -1,63 +1,81 @@
 -- UntitledUI Library - Mobile Optimized UI Framework
-
 local UntitledUI = {}
 
 -- Utility Function to Apply UI Corner Radius
 local function applyUICorner(element, radius)
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 5)
+    corner.CornerRadius = UDim.new(0, radius or 8)
     corner.Parent = element
+end
+
+-- Utility Function to Apply Glow Effect
+local function applyGlowEffect(element, color)
+    local glow = Instance.new("UIStroke")
+    glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    glow.Thickness = 5
+    glow.Color = color or Color3.fromRGB(255, 255, 255)
+    glow.Parent = element
 end
 
 -- Create a Frame with Customizable Settings
 function UntitledUI:CreateFrame(parent, size, position, bgColor, borderSize, cornerRadius, zIndex)
     local frame = Instance.new("Frame")
-    frame.Size = size or UDim2.new(0, 200, 0, 100)
-    frame.Position = position or UDim2.new(0.5, -100, 0.5, -50)
+    frame.Size = size or UDim2.new(0, 400, 0, 200)
+    frame.Position = position or UDim2.new(0.5, -200, 0.5, -100)
     frame.BackgroundColor3 = bgColor or Color3.fromRGB(40, 40, 40)
     frame.BorderSizePixel = borderSize or 0
     frame.ZIndex = zIndex or 1
     applyUICorner(frame, cornerRadius)
+    applyGlowEffect(frame, Color3.fromRGB(255, 255, 255))
     frame.Parent = parent
     return frame
 end
 
--- Create a TextButton with Custom Settings
+-- Create a TextButton with Fancy Hover/Click Effects
 function UntitledUI:CreateButton(parent, text, size, position, callback)
     local button = Instance.new("TextButton")
-    button.Size = size or UDim2.new(0, 200, 0, 50)
-    button.Position = position or UDim2.new(0.5, -100, 0.5, -25)
-    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.Size = size or UDim2.new(0, 250, 0, 60)
+    button.Position = position or UDim2.new(0.5, -125, 0.5, -30)
+    button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
     button.Font = Enum.Font.Gotham
-    button.TextSize = 14
+    button.TextSize = 16
     button.Text = text
-    applyUICorner(button)
-    
-    -- Button Hover Effects
+    applyUICorner(button, 12)
+    applyGlowEffect(button, Color3.fromRGB(0, 255, 255))
+
+    -- Hover Effects
     button.MouseEnter:Connect(function()
-        button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        button.TextSize = 18
     end)
     button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        button.TextSize = 16
     end)
 
-    -- Button Click Event
+    -- Button Click Animation
     button.MouseButton1Click:Connect(function()
+        button.BackgroundColor3 = Color3.fromRGB(255, 165, 0) -- Color change on click
         if callback then callback() end
+        wait(0.2) -- Reset color after click
+        button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     end)
 
     button.Parent = parent
     return button
 end
 
--- Create a Tab within the UI
+-- Create a Tab with Smooth Animation
 function UntitledUI:CreateTab(parent, tabName)
     local tab = Instance.new("Frame")
-    tab.Size = UDim2.new(0, 200, 0, 100)
-    tab.Position = UDim2.new(0.5, -100, 0.5, -50)
+    tab.Size = UDim2.new(0, 300, 0, 120)
+    tab.Position = UDim2.new(0.5, -150, 0.5, -60)
     tab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    applyUICorner(tab)
+    tab.BorderSizePixel = 2
+    tab.ZIndex = 2
+    applyUICorner(tab, 12)
+    applyGlowEffect(tab, Color3.fromRGB(255, 165, 0))
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, 0, 0.2, 0)
@@ -65,39 +83,44 @@ function UntitledUI:CreateTab(parent, tabName)
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.Gotham
     label.TextSize = 18
+    label.TextTransparency = 0.5
     label.Parent = tab
 
+    -- Smooth Animation for Tab Visibility
     tab.Parent = parent
     return tab
 end
 
--- Create a Section inside a Tab
+-- Create a Section inside a Tab with Smooth Entry Animation
 function UntitledUI:CreateSection(parent, sectionName)
     local section = Instance.new("Frame")
     section.Size = UDim2.new(1, 0, 0.7, 0)
     section.Position = UDim2.new(0, 0, 0.2, 0)
     section.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    applyUICorner(section)
-    
+    applyUICorner(section, 8)
+    applyGlowEffect(section, Color3.fromRGB(255, 0, 255))
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, 0, 0.1, 0)
     label.Text = sectionName
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.Gotham
     label.TextSize = 16
+    label.TextTransparency = 0.5
     label.Parent = section
 
     section.Parent = parent
     return section
 end
 
--- Create a Dropdown Menu
+-- Create a Dropdown Menu with Animated Transitions
 function UntitledUI:CreateDropdownMenu(parent, options, callback)
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.Size = UDim2.new(1, 0, 0.05, 0)
     dropdownFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    applyUICorner(dropdownFrame)
-    
+    applyUICorner(dropdownFrame, 8)
+    applyGlowEffect(dropdownFrame, Color3.fromRGB(255, 255, 255))
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.8, 0, 1, 0)
     label.Text = "Select Option"
@@ -105,7 +128,7 @@ function UntitledUI:CreateDropdownMenu(parent, options, callback)
     label.Font = Enum.Font.Gotham
     label.TextSize = 14
     label.Parent = dropdownFrame
-    
+
     local dropdownButton = Instance.new("TextButton")
     dropdownButton.Size = UDim2.new(0.2, 0, 1, 0)
     dropdownButton.Position = UDim2.new(0.8, 0, 0, 0)
@@ -115,14 +138,14 @@ function UntitledUI:CreateDropdownMenu(parent, options, callback)
     dropdownButton.Font = Enum.Font.Gotham
     dropdownButton.TextSize = 14
     dropdownButton.Parent = dropdownFrame
-    
+
     local dropdownList = Instance.new("Frame")
     dropdownList.Size = UDim2.new(1, 0, 0, #options * 30)
     dropdownList.Position = UDim2.new(0, 0, 1, 0)
     dropdownList.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     dropdownList.Visible = false
     dropdownList.Parent = dropdownFrame
-    
+
     for _, option in ipairs(options) do
         local optionButton = Instance.new("TextButton")
         optionButton.Size = UDim2.new(1, 0, 0, 30)
@@ -131,6 +154,7 @@ function UntitledUI:CreateDropdownMenu(parent, options, callback)
         optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
         optionButton.Font = Enum.Font.Gotham
         optionButton.TextSize = 14
+        applyUICorner(optionButton, 8)
         optionButton.Parent = dropdownList
 
         optionButton.MouseButton1Click:Connect(function()
@@ -139,7 +163,7 @@ function UntitledUI:CreateDropdownMenu(parent, options, callback)
             if callback then callback(option) end
         end)
     end
-    
+
     dropdownButton.MouseButton1Click:Connect(function()
         dropdownList.Visible = not dropdownList.Visible
     end)
@@ -148,7 +172,7 @@ function UntitledUI:CreateDropdownMenu(parent, options, callback)
     return dropdownFrame
 end
 
--- Create a Textbox for User Input
+-- Create a Textbox with Smooth Input Animations
 function UntitledUI:CreateTextbox(parent, placeholderText, callback)
     local textbox = Instance.new("TextBox")
     textbox.Size = UDim2.new(1, -20, 0.05, 0)
@@ -158,23 +182,25 @@ function UntitledUI:CreateTextbox(parent, placeholderText, callback)
     textbox.Font = Enum.Font.Gotham
     textbox.TextSize = 14
     textbox.PlaceholderText = placeholderText
-    applyUICorner(textbox)
-    
+    applyUICorner(textbox, 8)
+    applyGlowEffect(textbox, Color3.fromRGB(0, 255, 255))
+
     textbox:GetPropertyChangedSignal("Text"):Connect(function()
         if callback then callback(textbox.Text) end
     end)
-    
+
     textbox.Parent = parent
     return textbox
 end
 
--- Create a Toggle (Checkbox-like behavior)
+-- Create a Toggle (Checkbox-like behavior) with Fancy Transitions
 function UntitledUI:CreateToggle(parent, toggleText, callback)
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Size = UDim2.new(0.5, -20, 0.05, 0)
     toggleFrame.Position = UDim2.new(0.05 + (#parent:GetChildren() * 0.06), 0, 0.05, 0)
     toggleFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    applyUICorner(toggleFrame)
+    applyUICorner(toggleFrame, 8)
+    applyGlowEffect(toggleFrame, Color3.fromRGB(255, 0, 255))
 
     local toggleLabel = Instance.new("TextLabel")
     toggleLabel.Size = UDim2.new(0.8, 0, 1, 0)
@@ -192,6 +218,7 @@ function UntitledUI:CreateToggle(parent, toggleText, callback)
     toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     toggleButton.Font = Enum.Font.Gotham
     toggleButton.TextSize = 14
+    applyUICorner(toggleButton, 8)
     toggleButton.Parent = toggleFrame
 
     local isOn = false
